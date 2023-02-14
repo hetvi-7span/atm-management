@@ -19,7 +19,9 @@ public class TransactionHistory {
 
     private String description;
 
-    private Double amount;
+    private Double amount = 0.0;
+
+    private TransactionType transactionType;
 
     @CreationTimestamp
     @Column(name = "created_date")
