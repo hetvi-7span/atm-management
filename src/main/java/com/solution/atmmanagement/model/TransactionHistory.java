@@ -27,4 +27,8 @@ public class TransactionHistory {
     @Column(name = "updated_date")
     private Date updatedDate;
 
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    private User user;
+
 }
