@@ -1,15 +1,14 @@
 package com.solution.atmmanagement.model;
 
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
-import java.sql.Date;
 
 @Entity
-@Data
-public class BankDetails {
+@Getter
+@Setter
+public class BankDetails extends BaseModel{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -23,13 +22,4 @@ public class BankDetails {
 
     @OneToOne(cascade = CascadeType.ALL)
     User user;
-
-    @CreationTimestamp
-    @Column(name = "created_date")
-    private Date createDate;
-
-    @UpdateTimestamp
-    @Column(name = "updated_date")
-    private Date updatedDate;
-
 }

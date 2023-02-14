@@ -1,16 +1,17 @@
 package com.solution.atmmanagement.model;
 
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
-import java.sql.Date;
 
 @Entity
 @Table(name = "user_details",uniqueConstraints = { @UniqueConstraint(columnNames = { "user_name" }) })
-@Data
-public class User {
+@Getter
+@Setter
+@ToString
+public class User extends BaseModel{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -24,16 +25,12 @@ public class User {
     @Column(name="mobile_no")
     private String mobileNumber;
 
-    @CreationTimestamp
-    @Column(name = "created_date")
-    private Date createDate;
-
-    @UpdateTimestamp
-    @Column(name = "updated_date")
-    private Date updatedDate;
-
     /*@OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "bank_detail_id",referencedColumnName = "id")*/
-    @OneToOne(mappedBy = "user")
+    @OneToOne(mappedBy = "user",fetch = FetchType.EAGER)
     BankDetails bankDetails;
+
+
+
+
 }

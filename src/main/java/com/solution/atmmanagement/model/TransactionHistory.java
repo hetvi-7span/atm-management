@@ -1,18 +1,12 @@
 package com.solution.atmmanagement.model;
 
-import javax.persistence.*;
-
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import java.sql.Date;
+import javax.persistence.*;
 
 @Entity
 @Data
-public class TransactionHistory {
+public class TransactionHistory extends BaseModel{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -20,14 +14,6 @@ public class TransactionHistory {
     private String description;
 
     private Double amount;
-
-    @CreationTimestamp
-    @Column(name = "created_date")
-    private Date createDate;
-
-    @UpdateTimestamp
-    @Column(name = "updated_date")
-    private Date updatedDate;
 
     @ManyToOne
     @JoinColumn(name="user_id")

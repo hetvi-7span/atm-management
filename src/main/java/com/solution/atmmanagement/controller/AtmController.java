@@ -16,4 +16,16 @@ public class AtmController {
         return atmService.login(username);
 
     }
+
+
+    @ShellMethod("transfer")
+    public String transfer(String username,Double amount){
+        return atmService.transferAmount(username,amount);
+    }
+
+    @ShellMethod("logout")
+    public String logout(){
+        return atmService.logout();
+    }
+
 }
