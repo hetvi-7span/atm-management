@@ -15,6 +15,7 @@ public class TransactionHistory extends BaseModel{
 
     private Double amount = 0.0;
 
+    @Enumerated(EnumType.STRING)
     private TransactionType transactionType;
 
     @ManyToOne

@@ -1,7 +1,6 @@
 package com.solution.atmmanagement.service.impl;
 
 import com.solution.atmmanagement.dto.CurrentUserDto;
-import com.solution.atmmanagement.exception.AtmTransactionException;
 import com.solution.atmmanagement.model.*;
 import com.solution.atmmanagement.repository.*;
 import com.solution.atmmanagement.service.AtmService;
@@ -145,15 +144,12 @@ public class AtmServiceImpl implements AtmService {
             BankDetails targetUserBankDetails = getUserBankDetails(targetUser.getId());
             targetUserBankDetails.setBalance(targetUserBankDetails.getBalance() + currentUserBalance);
 
-            /*sourceUser.getBankDetails().setBalance(0.0);
-
-            targetUser.getBankDetails().setBalance(targetUser.getBankDetails().getBalance() + currentUserBalance);*/
-
-            bankRepository.save(sourceUserBankDetails);
+            BankDetails save = bankRepository.save(sourceUserBankDetails);
             bankRepository.save(targetUserBankDetails);
 
             msg = this.messageSource.getMessage("amount.transfer.owning.balance", new Object[]{currentUserBalance, targetUser.getUsername(), owingAmount}, LocaleContextHolder.getLocale());
 
+            createHistory(sourceUser, this.messageSource.getMessage("user.transfer.history", new Object[]{amount,username,save.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.TRANSFER);
         } else {
 
             BankDetails sourceUserBankDetails = getUserBankDetails(currentUserDto.getUserId());
@@ -166,6 +162,10 @@ public class AtmServiceImpl implements AtmService {
             bankRepository.save(targetUserBankDetails);
 
             msg = this.messageSource.getMessage("amount.transfer.balance", new Object[]{amount, username, sourceUserWithUpdatedDetails.getBalance()}, LocaleContextHolder.getLocale());
+
+            String historyMessage = this.messageSource.getMessage("user.transfer.history", new Object[]{amount,username,sourceUserWithUpdatedDetails.getBalance()}, LocaleContextHolder.getLocale());
+
+            createHistory(sourceUser, historyMessage, TransactionType.TRANSFER);
         }
 
         return msg;
@@ -242,6 +242,25 @@ public class AtmServiceImpl implements AtmService {
 
         msg = this.messageSource.getMessage("current.balance", new Object[]{currentUserDto.getUsername(),currentUserDto.getCurrentBalance()}, LocaleContextHolder.getLocale());
         return msg;
+    }
+
+    @Override
+    public String statement() {
+
+        User user = userRepository.findByUsername(currentUserDto.getUsername());
+
+        List<TransactionHistory> transactionHistories =  transactionHistoryRepository.findTop5ByUserOrderByCreateDateDesc(user);
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (int i = 0 ; i < transactionHistories.size() ; i++) {
+            stringBuilder.append(i+1).append(") " ).append(transactionHistories.get(i).getCreateDate()).append(" || Transaction type : ")
+                    .append(transactionHistories.get(i).getTransactionType())
+                    .append(" || Description : ")
+                    .append(transactionHistories.get(i).getDescription()).append("\n");
+        }
+
+        return stringBuilder.toString();
     }
 
     private CurrentUserDto currentUser(String username, Double balance, Integer userId) {

@@ -78,5 +78,9 @@ public class AtmController {
         return atmService.getCurrentBalance();
     }
 
+    @ShellMethod
+    public String statement(){
+        return atmService.statement();
+    }
 
 }

@@ -12,6 +12,8 @@ public interface AtmService {
 
     String getCurrentBalance();
 
+    String statement();
+
    /* String setWithdrawLimit(Double amount);
     String setCreditLimit(Double amount);*/
 
