@@ -28,6 +28,4 @@ public class BankAdditionalDetails {
     @Column(name = "updated_date")
     private Date updatedDate;
 
-    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
-    User user;
 }

@@ -12,7 +12,7 @@ public class AtmController {
     AtmService atmService;
 
     /**
-     * This method used for login
+     * This command used for login
      * Create user if not exits
      * @param username from CLI
      * @return Hello, {username}! Your balance is $ {balance}
@@ -22,11 +22,22 @@ public class AtmController {
         return atmService.login(username);
     }
 
+    /**
+     * This command used for deposit amount
+     * @param amount data
+     * @return Your balance is $ {balance}
+     */
     @ShellMethod
     public String deposit(Double amount){
         return atmService.deposit(amount);
     }
 
+
+    /**
+     * This command used for withdraw amount
+     * @param amount data
+     * @return Your balance is $ {balance}
+     */
     @ShellMethod
     public String withdraw(Double amount){
         return atmService.withdraw(amount);
