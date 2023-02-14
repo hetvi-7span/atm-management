@@ -12,10 +12,10 @@ An atm-management is a Command Line Interface (CLI) to simulate an interaction o
 ## Steps to run a project
 1. Run AtmManagementApplication.java file 
 ## Assumptions
-1. Considering user is valid and pre-authenticated.
-2. User will enter correct commands to run an application error free.
-3. User will give appropriate input to justify the command 
-4. In the case of a deposit when the user has multiple creditors that case user will pay the amount which has the maximum owing amount. 
+1. Considering the user is valid and pre-authenticated.
+2. The user will enter the correct commands to run an application error-free.
+3. The user will give appropriate input to justify the command
+4. In the case of a deposit when the user has multiple creditors that case user will pay the amount which has the maximum owing amount.
 
 ## Implemented features
 1. login
