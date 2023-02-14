@@ -189,7 +189,7 @@ public class AtmServiceImpl implements AtmService {
     @Override
     public String deposit(Double amount) {
 
-        String msg;
+        String msg = "";
 
         if (currentUserDto == null) {
             msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
@@ -197,12 +197,57 @@ public class AtmServiceImpl implements AtmService {
         }
 
         BankDetails bankDetails = getUserBankDetails(currentUserDto.getUserId());
-        if (Objects.nonNull(bankDetails)) {
-            bankDetails.setBalance(bankDetails.getBalance() + amount);
-            bankRepository.save(bankDetails);
-            createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.deposit.history", new Object[]{amount,bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.DEPOSIT);
+        UserOwingDetails userOwingDetails = new UserOwingDetails();
+        BankDetails creditorBankDetails = new BankDetails();
+        Double owingAmount = 0.0;
+        Double currentBalance = 0.0;
+
+        List<UserOwingDetails> existingOwingDetails = userOwingRepository.findByDebtorIdOrderByOwingAmountDesc(currentUserDto.getUserId());
+
+        if(Objects.nonNull(existingOwingDetails) &&  existingOwingDetails.size() > 0) {
+            userOwingDetails = existingOwingDetails.get(0);
         }
-        msg = this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+        if(Objects.nonNull(userOwingDetails) &&  userOwingDetails.getOwingAmount() > 0.0){
+            if(userOwingDetails.getOwingAmount() > amount){
+                owingAmount = userOwingDetails.getOwingAmount() - amount;
+                userOwingDetails.setOwingAmount(owingAmount);
+                userOwingRepository.save(userOwingDetails);
+
+                creditorBankDetails = getUserBankDetails(userOwingDetails.getCreditorId());
+                creditorBankDetails.setBalance(creditorBankDetails.getBalance() + amount);
+                bankRepository.save(creditorBankDetails);
+
+            } else if (userOwingDetails.getOwingAmount() < amount ) {
+                creditorBankDetails = getUserBankDetails(userOwingDetails.getCreditorId());
+                creditorBankDetails.setBalance(creditorBankDetails.getBalance() + userOwingDetails.getOwingAmount());
+                bankRepository.save(creditorBankDetails);
+
+                currentBalance = bankDetails.getBalance() + (amount - userOwingDetails.getOwingAmount());
+                bankDetails.setBalance(currentBalance);
+                bankRepository.save(bankDetails);
+
+                owingAmount = userOwingDetails.getOwingAmount();
+                userOwingDetails.setOwingAmount(0.0);
+                userOwingRepository.save(userOwingDetails);
+
+            } else if(userOwingDetails.getOwingAmount().equals(amount) ){
+                creditorBankDetails = getUserBankDetails(userOwingDetails.getCreditorId());
+                creditorBankDetails.setBalance(creditorBankDetails.getBalance() + userOwingDetails.getOwingAmount());
+                bankRepository.save(creditorBankDetails);
+
+                owingAmount = userOwingDetails.getOwingAmount();
+                userOwingDetails.setOwingAmount(0.0);
+                userOwingRepository.save(userOwingDetails);
+            }
+            msg = this.messageSource.getMessage("amount.transfer.owning.balance", new Object[]{owingAmount, creditorBankDetails.getUser().getUsername(), currentBalance ,userOwingDetails.getOwingAmount()}, LocaleContextHolder.getLocale());
+        }else {
+            if (Objects.nonNull(bankDetails)) {
+                bankDetails.setBalance(bankDetails.getBalance() + amount);
+                bankRepository.save(bankDetails);
+                createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.deposit.history", new Object[]{amount, bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.DEPOSIT);
+            }
+            msg = this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+        }
         return msg;
     }
 

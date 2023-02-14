@@ -20,7 +20,7 @@ public class UserOwingDetails extends BaseModel{
     private Integer debtorId;
     private Integer creditorId;
 
-    private Double owingAmount;
+    private Double owingAmount = 0.0;
 
 
 }
