@@ -5,24 +5,27 @@ import com.solution.atmmanagement.model.BankAdditionalDetails;
 import com.solution.atmmanagement.model.BankDetails;
 import com.solution.atmmanagement.model.User;
 import com.solution.atmmanagement.model.UserOwingDetails;
+import com.solution.atmmanagement.exception.AtmTransactionException;
+import com.solution.atmmanagement.model.*;
 import com.solution.atmmanagement.repository.BankAdditionalRepository;
 import com.solution.atmmanagement.repository.BankRepository;
 import com.solution.atmmanagement.repository.UserOwingRepository;
+import com.solution.atmmanagement.repository.TransactionHistoryRepository;
 import com.solution.atmmanagement.repository.UserRepository;
 import com.solution.atmmanagement.service.AtmService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import javax.transaction.Transactional;
 import javax.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.Objects;
 
 @Service
-@Transactional
 public class AtmServiceImpl implements AtmService {
 
 
@@ -43,7 +46,11 @@ public class AtmServiceImpl implements AtmService {
 
     CurrentUserDto currentUserDto;
 
+    @Autowired
+    TransactionHistoryRepository transactionHistoryRepository;
 
+
+    @Transactional
     @Override
     public String login(String username) {
 
@@ -170,10 +177,86 @@ public class AtmServiceImpl implements AtmService {
         return this.messageSource.getMessage("user.logout", new Object[]{user}, LocaleContextHolder.getLocale());
     }
 
+    @Override
+    public String deposit(Double amount){
+         BankDetails bankDetails = getBankDetails();
+         if(Objects.nonNull(bankDetails)){
+                bankDetails.setBalance(bankDetails.getBalance() + amount);
+                bankRepository.save(bankDetails);
+                createHistory(bankDetails.getUser(),this.messageSource.getMessage("user.deposit.history", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()),TransactionType.DEPOSIT);
+         }
+        return this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+    }
+
+    @Override
+    public String withdraw(Double amount){
+        BankDetails bankDetails = getBankDetails();
+        BankAdditionalDetails bankAdditionalDetails = Objects.nonNull(bankDetails)?bankDetails.getBankAdditionalDetails():null;
+        if(bankAdditionalDetails.getWithdrawalLimit() < amount){
+              throw new AtmTransactionException( this.messageSource.getMessage("user.withdraw.limit.exceeded", new Object[]{},LocaleContextHolder.getLocale()));
+        }
+        if(Objects.nonNull(bankDetails) && bankDetails.getBalance() > amount){
+            bankDetails.setBalance(bankDetails.getBalance() - amount);
+            bankRepository.save(bankDetails);
+        }
+        createHistory(bankDetails.getUser(),this.messageSource.getMessage("user.withdraw.history", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()),TransactionType.WITHDRAW);
+
+        return this.messageSource.getMessage("user.withdraw", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+    }
 
     private CurrentUserDto currentUser(String username, Double balance, Integer userId) {
         return CurrentUserDto.builder().username(username).currentBalance(balance).userId(userId).build();
+    @Override
+    public String setWithdrawLimit(Double amount) {
+        BankDetails bankDetails = getBankDetails();
+        BankAdditionalDetails bankAdditionalDetails = bankDetails.getBankAdditionalDetails();
+        if(amount == 0.0){
+            bankDetails.setIsWithdrawalLimitGenerated(Boolean.FALSE);
+            bankRepository.save(bankDetails);
+        }else{
+            bankDetails.setIsWithdrawalLimitGenerated(Boolean.TRUE);
+            bankAdditionalDetails.setWithdrawalLimit(amount);
+            bankRepository.save(bankDetails);
+            bankAdditionalRepository.save(bankAdditionalDetails);
+        }
+        if(Objects.nonNull(bankDetails.getUser())) {
+            createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.withdraw.limit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.WITHDRAW);
+        }
+        return this.messageSource.getMessage("user.withdraw.limit", new Object[]{bankAdditionalDetails.getWithdrawalLimit()}, LocaleContextHolder.getLocale());
     }
 
+
+
+
+    @Override
+    public String setCreditLimit(Double amount) {
+        BankDetails bankDetails = getBankDetails();
+        BankAdditionalDetails bankAdditionalDetails = bankDetails.getBankAdditionalDetails();
+        if(amount == 0.0){
+            bankDetails.setIsCreditLimitGenerated(Boolean.FALSE);
+            bankRepository.save(bankDetails);
+        }else{
+            bankDetails.setIsCreditLimitGenerated(Boolean.TRUE);
+            bankAdditionalDetails.setCreditLimit(amount);
+            bankRepository.save(bankDetails);
+            bankAdditionalRepository.save(bankAdditionalDetails);
+        }
+        if(Objects.nonNull(bankDetails.getUser())) {
+            createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.credit.limit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.DEPOSIT);
+        }
+        return this.messageSource.getMessage("user.credit.limit", new Object[]{bankAdditionalDetails.getCreditLimit()}, LocaleContextHolder.getLocale());
+    }
+
+    private BankDetails getBankDetails() {
+        return bankRepository.findByUserId(1);
+    }
+
+    private void createHistory(User newUser,String msg, TransactionType type) {
+        TransactionHistory transactionHistory = new TransactionHistory();
+        transactionHistory.setTransactionType(type);
+        transactionHistory.setUser(newUser);
+        transactionHistory.setDescription(msg);
+        transactionHistoryRepository.save(transactionHistory);
+    }
 
 }

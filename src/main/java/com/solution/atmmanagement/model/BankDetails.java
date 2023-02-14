@@ -2,13 +2,15 @@ package com.solution.atmmanagement.model;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 import javax.persistence.*;
 
 @Entity
-@Getter
 @Setter
-public class BankDetails extends BaseModel{
+@Getter
+@ToString
+public class BankDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
@@ -22,4 +24,8 @@ public class BankDetails extends BaseModel{
 
     @OneToOne(cascade = CascadeType.ALL)
     User user;
+
+    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+    BankAdditionalDetails bankAdditionalDetails;
+
 }

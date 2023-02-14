@@ -7,4 +7,10 @@ public interface AtmService {
 
     String logout();
 
+    String deposit(Double amount);
+    String withdraw(Double amount);
+
+    String setWithdrawLimit(Double amount);
+    String setCreditLimit(Double amount);
+
 }

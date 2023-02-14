@@ -1,24 +1,20 @@
 package com.solution.atmmanagement.model;
 
-import lombok.Data;
-
 import javax.persistence.*;
 
+
 @Entity
-@Data
-public class TransactionHistory extends BaseModel{
+public class UserAccountDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private String description;
-
-    private Double amount = 0.0;
-
-    private TransactionType transactionType;
-
     @ManyToOne
     @JoinColumn(name="user_id")
     private User user;
+
+    private String recipientName;
+
+    private Double oweAmount;
 
 }

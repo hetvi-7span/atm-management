@@ -18,6 +18,4 @@ public class BankAdditionalDetails extends BaseModel{
     private Integer pin;
 
 
-    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
-    User user;
 }
