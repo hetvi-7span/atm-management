@@ -37,8 +37,8 @@ An atm-management is a Command Line Interface (CLI) to simulate an interaction o
 : As this is a real time problem so we can enhance the existing system by providing below functionalities.
 
 
-1. we can provide pin generation,updation functionality for account holders.
-2. Authenticate user's transaction by asking them to enter a pin.
-3. we can implement a custom authenticatation using mobile number or email address with otp.
-4. we can provide a functionality to set owing and withdrawal limit to limt the transactions. (limit can be per month or per day)
-5. we can reset the limits by using schedulars.
+1. we can provide pin generation and updation functionality for account holders.
+2. Authenticate users' transactions by asking them to enter a pin.
+3. we can implement a custom authentication using a mobile number or email address with otp.
+4. we can provide the functionality to set owing and withdrawal limits to limit the transactions. (limit can be per month or day)
+5. we can reset the limits by using schedulers.
