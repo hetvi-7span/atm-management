@@ -73,8 +73,8 @@ public class AtmController {
      * This command used to get current balance in account
      * @return {username} your current balance is ${amount}.
      */
-    @ShellMethod("checkBalance")
-    public String checkBalance(){
+    @ShellMethod("balance")
+    public String balance(){
         return atmService.getCurrentBalance();
     }
 

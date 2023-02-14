@@ -10,4 +10,5 @@ import java.util.List;
 public interface UserOwingRepository extends JpaRepository<UserOwingDetails,Integer> {
     List<UserOwingDetails> findByDebtorId(Integer userId);
     List<UserOwingDetails> findByDebtorIdOrderByOwingAmountDesc(Integer userId);
+    List<UserOwingDetails> findByCreditorId(Integer userId);
 }

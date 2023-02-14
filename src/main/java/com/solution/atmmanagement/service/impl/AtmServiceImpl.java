@@ -85,7 +85,17 @@ public class AtmServiceImpl implements AtmService {
                 }
             }
 
-            msg = this.messageSource.getMessage("existing.user", new Object[]{existingUser.getUsername(), existingUser.getBankDetails().getBalance(), owingMsg}, LocaleContextHolder.getLocale());
+            List<UserOwingDetails> userCreditingDetails = userOwingRepository.findByCreditorId(existingUser.getId());
+
+            StringBuilder creditingMsg = new StringBuilder();
+            if (!userCreditingDetails.isEmpty()) {
+                for (UserOwingDetails userOwingDetail : userCreditingDetails) {
+                    Optional<User> debtId = userRepository.findById(userOwingDetail.getDebtorId());
+                    debtId.ifPresent(user -> creditingMsg.append("Owed $").append(userOwingDetail.getOwingAmount()).append(" from ").append(user.getUsername()).append(".\n"));
+                }
+            }
+
+            msg = this.messageSource.getMessage("existing.user", new Object[]{existingUser.getUsername(), existingUser.getBankDetails().getBalance(), owingMsg,creditingMsg}, LocaleContextHolder.getLocale());
             currentUserDto = currentUser(existingUser.getUsername(), existingUser.getBankDetails().getBalance(), existingUser.getId());
         }
         return msg;
@@ -167,7 +177,6 @@ public class AtmServiceImpl implements AtmService {
 
             createHistory(sourceUser, historyMessage, TransactionType.TRANSFER);
         }
-
         return msg;
     }
 
@@ -199,7 +208,7 @@ public class AtmServiceImpl implements AtmService {
         BankDetails bankDetails = getUserBankDetails(currentUserDto.getUserId());
         UserOwingDetails userOwingDetails = new UserOwingDetails();
         BankDetails creditorBankDetails = new BankDetails();
-        Double owingAmount = 0.0;
+        Double owingAmount;
         Double currentBalance = 0.0;
 
         List<UserOwingDetails> existingOwingDetails = userOwingRepository.findByDebtorIdOrderByOwingAmountDesc(currentUserDto.getUserId());
@@ -226,7 +235,7 @@ public class AtmServiceImpl implements AtmService {
                 bankDetails.setBalance(currentBalance);
                 bankRepository.save(bankDetails);
 
-                owingAmount = userOwingDetails.getOwingAmount();
+                //owingAmount = userOwingDetails.getOwingAmount();
                 userOwingDetails.setOwingAmount(0.0);
                 userOwingRepository.save(userOwingDetails);
 
@@ -235,18 +244,19 @@ public class AtmServiceImpl implements AtmService {
                 creditorBankDetails.setBalance(creditorBankDetails.getBalance() + userOwingDetails.getOwingAmount());
                 bankRepository.save(creditorBankDetails);
 
-                owingAmount = userOwingDetails.getOwingAmount();
+              //  owingAmount = userOwingDetails.getOwingAmount();
                 userOwingDetails.setOwingAmount(0.0);
                 userOwingRepository.save(userOwingDetails);
             }
-            msg = this.messageSource.getMessage("amount.transfer.owning.balance", new Object[]{owingAmount, creditorBankDetails.getUser().getUsername(), currentBalance ,userOwingDetails.getOwingAmount()}, LocaleContextHolder.getLocale());
+            msg = this.messageSource.getMessage("amount.transfer.clear.owning.balance", new Object[]{amount, creditorBankDetails.getUser().getUsername(), currentBalance ,userOwingDetails.getOwingAmount()}, LocaleContextHolder.getLocale());
         }else {
             if (Objects.nonNull(bankDetails)) {
                 bankDetails.setBalance(bankDetails.getBalance() + amount);
                 bankRepository.save(bankDetails);
                 createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.deposit.history", new Object[]{amount, bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.DEPOSIT);
+                msg = this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
             }
-            msg = this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+
         }
         return msg;
     }
@@ -254,7 +264,7 @@ public class AtmServiceImpl implements AtmService {
     @Override
     public String withdraw(Double amount) {
 
-        String msg;
+        String msg = null;
 
         if (currentUserDto == null) {
             msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
@@ -262,17 +272,21 @@ public class AtmServiceImpl implements AtmService {
         }
 
         BankDetails bankDetails = getUserBankDetails(currentUserDto.getUserId());
-        BankAdditionalDetails bankAdditionalDetails = Objects.nonNull(bankDetails) ? bankDetails.getBankAdditionalDetails() : null;
+        //BankAdditionalDetails bankAdditionalDetails = Objects.nonNull(bankDetails) ? bankDetails.getBankAdditionalDetails() : null;
        /* if(bankAdditionalDetails.getWithdrawalLimit() < amount){
               throw new AtmTransactionException( this.messageSource.getMessage("user.withdraw.limit.exceeded", new Object[]{},LocaleContextHolder.getLocale()));
         }*/
         if (Objects.nonNull(bankDetails) && bankDetails.getBalance() > amount) {
             bankDetails.setBalance(bankDetails.getBalance() - amount);
             bankRepository.save(bankDetails);
-        }
-        createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.withdraw.history", new Object[]{amount,bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.WITHDRAW);
 
-        msg = this.messageSource.getMessage("user.withdraw", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+            createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.withdraw.history", new Object[]{amount,bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.WITHDRAW);
+
+            msg = this.messageSource.getMessage("user.withdraw", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+        }
+
+
+        
         return msg;
     }
 
