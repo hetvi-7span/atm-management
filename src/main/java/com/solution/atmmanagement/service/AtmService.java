@@ -10,6 +10,8 @@ public interface AtmService {
     String deposit(Double amount);
     String withdraw(Double amount);
 
+    String getCurrentBalance();
+
    /* String setWithdrawLimit(Double amount);
     String setCreditLimit(Double amount);*/
 

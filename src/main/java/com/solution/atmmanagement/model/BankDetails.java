@@ -9,7 +9,6 @@ import javax.persistence.*;
 @Entity
 @Setter
 @Getter
-@ToString
 public class BankDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

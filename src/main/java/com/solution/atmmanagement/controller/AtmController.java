@@ -53,6 +53,12 @@ public class AtmController {
     }*/
 
 
+    /**
+     * This command used for transfer amount
+     * @param username,amount data
+     * @return Transferred ${amount} to {username} . Your balance is ${amount}.
+     * @return Transferred ${amount} to {username}. Your balance is ${amount}.Owed ${amount} to {username}.
+     */
     @ShellMethod("transfer")
     public String transfer(String username,Double amount){
         return atmService.transferAmount(username,amount);
@@ -61,6 +67,15 @@ public class AtmController {
     @ShellMethod("logout")
     public String logout(){
         return atmService.logout();
+    }
+
+    /**
+     * This command used to get current balance in account
+     * @return {username} your current balance is ${amount}.
+     */
+    @ShellMethod("balance")
+    public String balance(){
+        return atmService.getCurrentBalance();
     }
 
 

@@ -10,7 +10,6 @@ import javax.persistence.*;
 @Table(name = "user_details",uniqueConstraints = { @UniqueConstraint(columnNames = { "user_name" }) })
 @Getter
 @Setter
-@ToString
 public class User extends BaseModel{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -46,59 +46,59 @@ public class AtmServiceImpl implements AtmService {
     @Override
     public String login(String username) {
 
-            String msg = null;
-            if(currentUserDto != null){
-                msg = this.messageSource.getMessage("logout.before.login", new Object[]{currentUserDto.getUsername()}, LocaleContextHolder.getLocale());
-                return msg;
-            }
-
-            User existingUser = userRepository.findByUsername(username);
-            if (existingUser == null) {
-                User newUser;
-                try {
-                    User user = new User();
-                    user.setUsername(username);
-                    newUser = userRepository.save(user);
-
-                    BankDetails bankDetails = new BankDetails();
-                    bankDetails.setUser(newUser);
-                    bankDetails.setBankAdditionalDetails(new BankAdditionalDetails());
-                    bankRepository.save(bankDetails);
-
-                    createHistory(newUser,this.messageSource.getMessage("user.created.history", new Object[]{}, LocaleContextHolder.getLocale()),TransactionType.CREATE);
-
-                    msg = this.messageSource.getMessage("user.created", new Object[]{newUser.getUsername(), bankDetails.getBalance()}, LocaleContextHolder.getLocale());
-                    currentUserDto = currentUser(newUser.getUsername(), 0.0, newUser.getId());
-                } catch (ConstraintViolationException e) {
-                    return this.messageSource.getMessage("user.exist", new Object[]{}, LocaleContextHolder.getLocale());
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-
-                List<UserOwingDetails> userOwingDetails = userOwingRepository.findByDebtorId(existingUser.getId());
-
-                StringBuilder owingMsg = new StringBuilder();
-                if(!userOwingDetails.isEmpty()){
-                    for (UserOwingDetails userOwingDetail:userOwingDetails) {
-                        Optional<User> creditor = userRepository.findById(userOwingDetail.getCreditorId());
-                        creditor.ifPresent(user -> owingMsg.append("Owed $").append(userOwingDetail.getOwingAmount()).append(" to ").append(user.getUsername()).append(".\n"));
-                    }
-                }
-
-                msg = this.messageSource.getMessage("existing.user", new Object[]{existingUser.getUsername(), existingUser.getBankDetails().getBalance(),owingMsg}, LocaleContextHolder.getLocale());
-                currentUserDto = currentUser(existingUser.getUsername(), existingUser.getBankDetails().getBalance(), existingUser.getId());
-            }
+        String msg = null;
+        if (currentUserDto != null) {
+            msg = this.messageSource.getMessage("logout.before.login", new Object[]{currentUserDto.getUsername()}, LocaleContextHolder.getLocale());
             return msg;
+        }
+
+        User existingUser = userRepository.findByUsername(username);
+        if (existingUser == null) {
+            User newUser;
+            try {
+                User user = new User();
+                user.setUsername(username);
+                newUser = userRepository.save(user);
+
+                BankDetails bankDetails = new BankDetails();
+                bankDetails.setUser(newUser);
+                bankDetails.setBankAdditionalDetails(new BankAdditionalDetails());
+                bankRepository.save(bankDetails);
+
+                //createHistory(newUser, this.messageSource.getMessage("user.created.history", new Object[]{}, LocaleContextHolder.getLocale()), TransactionType.CREATE);
+
+                msg = this.messageSource.getMessage("user.created", new Object[]{newUser.getUsername(), bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+                currentUserDto = currentUser(newUser.getUsername(), 0.0, newUser.getId());
+            } catch (ConstraintViolationException e) {
+                return this.messageSource.getMessage("user.exist", new Object[]{}, LocaleContextHolder.getLocale());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+
+            List<UserOwingDetails> userOwingDetails = userOwingRepository.findByDebtorId(existingUser.getId());
+
+            StringBuilder owingMsg = new StringBuilder();
+            if (!userOwingDetails.isEmpty()) {
+                for (UserOwingDetails userOwingDetail : userOwingDetails) {
+                    Optional<User> creditor = userRepository.findById(userOwingDetail.getCreditorId());
+                    creditor.ifPresent(user -> owingMsg.append("Owed $").append(userOwingDetail.getOwingAmount()).append(" to ").append(user.getUsername()).append(".\n"));
+                }
+            }
+
+            msg = this.messageSource.getMessage("existing.user", new Object[]{existingUser.getUsername(), existingUser.getBankDetails().getBalance(), owingMsg}, LocaleContextHolder.getLocale());
+            currentUserDto = currentUser(existingUser.getUsername(), existingUser.getBankDetails().getBalance(), existingUser.getId());
+        }
+        return msg;
 
 
     }
 
     @Override
     public String transferAmount(String username, Double amount) {
-        String msg = null;
+        String msg;
 
-        if (currentUserDto.getUsername() == null) {
+        if (currentUserDto == null) {
             msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
             return msg;
         }
@@ -121,13 +121,13 @@ public class AtmServiceImpl implements AtmService {
             List<UserOwingDetails> isTargetUserAsCreditor = existingOwingDetails.stream().filter(userOwingDetails -> userOwingDetails.getCreditorId().equals(targetUser.getId())).collect(Collectors.toList());
 
             UserOwingDetails userOwingDetails = null;
-            double owingAmount  = amount - currentUserBalance;
+            double owingAmount = amount - currentUserBalance;
 
-            if(!isTargetUserAsCreditor.isEmpty()){
+            if (!isTargetUserAsCreditor.isEmpty()) {
                 userOwingDetails = isTargetUserAsCreditor.get(0);
                 owingAmount = owingAmount + isTargetUserAsCreditor.get(0).getOwingAmount();
 
-            }else{
+            } else {
                 userOwingDetails = new UserOwingDetails();
                 userOwingDetails.setDebtorId(sourceUser.getId());
                 userOwingDetails.setCreditorId(targetUser.getId());
@@ -136,26 +136,36 @@ public class AtmServiceImpl implements AtmService {
 
             userOwingDetails.setOwingAmount(owingAmount);
 
-
             userOwingRepository.save(userOwingDetails);
 
-            sourceUser.getBankDetails().setBalance(0.0);
 
-            targetUser.getBankDetails().setBalance(targetUser.getBankDetails().getBalance() + currentUserBalance);
+            BankDetails sourceUserBankDetails = getUserBankDetails(currentUserDto.getUserId());
+            sourceUserBankDetails.setBalance(0.0);
 
-            userRepository.save(sourceUser);
-            userRepository.save(targetUser);
+            BankDetails targetUserBankDetails = getUserBankDetails(targetUser.getId());
+            targetUserBankDetails.setBalance(targetUserBankDetails.getBalance() + currentUserBalance);
+
+            /*sourceUser.getBankDetails().setBalance(0.0);
+
+            targetUser.getBankDetails().setBalance(targetUser.getBankDetails().getBalance() + currentUserBalance);*/
+
+            bankRepository.save(sourceUserBankDetails);
+            bankRepository.save(targetUserBankDetails);
 
             msg = this.messageSource.getMessage("amount.transfer.owning.balance", new Object[]{currentUserBalance, targetUser.getUsername(), owingAmount}, LocaleContextHolder.getLocale());
 
         } else {
-            sourceUser.getBankDetails().setBalance(currentUserBalance - amount);
-            targetUser.getBankDetails().setBalance(targetUser.getBankDetails().getBalance() + amount);
 
-            User sourceUserWithUpdatedDetails = userRepository.save(sourceUser);
-            userRepository.save(targetUser);
+            BankDetails sourceUserBankDetails = getUserBankDetails(currentUserDto.getUserId());
+            sourceUserBankDetails.setBalance(currentUserBalance - amount);
 
-            msg = this.messageSource.getMessage("amount.transfer.balance", new Object[]{amount, username, sourceUserWithUpdatedDetails.getBankDetails().getBalance()}, LocaleContextHolder.getLocale());
+            BankDetails targetUserBankDetails = getUserBankDetails(targetUser.getId());
+            targetUserBankDetails.setBalance(targetUserBankDetails.getBalance() + amount);
+
+            BankDetails sourceUserWithUpdatedDetails = bankRepository.save(sourceUserBankDetails);
+            bankRepository.save(targetUserBankDetails);
+
+            msg = this.messageSource.getMessage("amount.transfer.balance", new Object[]{amount, username, sourceUserWithUpdatedDetails.getBalance()}, LocaleContextHolder.getLocale());
         }
 
         return msg;
@@ -163,36 +173,75 @@ public class AtmServiceImpl implements AtmService {
 
     @Override
     public String logout() {
+        String msg;
+
+        if (currentUserDto == null) {
+            msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
+            return msg;
+        }
+
         String user = currentUserDto.getUsername();
-       currentUserDto = null;
-        return this.messageSource.getMessage("user.logout", new Object[]{user}, LocaleContextHolder.getLocale());
+        currentUserDto = null;
+        msg = this.messageSource.getMessage("user.logout", new Object[]{user}, LocaleContextHolder.getLocale());
+        return msg;
     }
 
     @Override
-    public String deposit(Double amount){
-         BankDetails bankDetails = getBankDetails();
-         if(Objects.nonNull(bankDetails)){
-                bankDetails.setBalance(bankDetails.getBalance() + amount);
-                bankRepository.save(bankDetails);
-                createHistory(bankDetails.getUser(),this.messageSource.getMessage("user.deposit.history", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()),TransactionType.DEPOSIT);
-         }
-        return this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+    public String deposit(Double amount) {
+
+        String msg;
+
+        if (currentUserDto == null) {
+            msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
+            return msg;
+        }
+
+        BankDetails bankDetails = getUserBankDetails(currentUserDto.getUserId());
+        if (Objects.nonNull(bankDetails)) {
+            bankDetails.setBalance(bankDetails.getBalance() + amount);
+            bankRepository.save(bankDetails);
+            createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.deposit.history", new Object[]{amount,bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.DEPOSIT);
+        }
+        msg = this.messageSource.getMessage("user.deposit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+        return msg;
     }
 
     @Override
-    public String withdraw(Double amount){
-        BankDetails bankDetails = getBankDetails();
-        BankAdditionalDetails bankAdditionalDetails = Objects.nonNull(bankDetails)?bankDetails.getBankAdditionalDetails():null;
+    public String withdraw(Double amount) {
+
+        String msg;
+
+        if (currentUserDto == null) {
+            msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
+            return msg;
+        }
+
+        BankDetails bankDetails = getUserBankDetails(currentUserDto.getUserId());
+        BankAdditionalDetails bankAdditionalDetails = Objects.nonNull(bankDetails) ? bankDetails.getBankAdditionalDetails() : null;
        /* if(bankAdditionalDetails.getWithdrawalLimit() < amount){
               throw new AtmTransactionException( this.messageSource.getMessage("user.withdraw.limit.exceeded", new Object[]{},LocaleContextHolder.getLocale()));
         }*/
-        if(Objects.nonNull(bankDetails) && bankDetails.getBalance() > amount){
+        if (Objects.nonNull(bankDetails) && bankDetails.getBalance() > amount) {
             bankDetails.setBalance(bankDetails.getBalance() - amount);
             bankRepository.save(bankDetails);
         }
-        createHistory(bankDetails.getUser(),this.messageSource.getMessage("user.withdraw.history", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()),TransactionType.WITHDRAW);
+        createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.withdraw.history", new Object[]{amount,bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.WITHDRAW);
 
-        return this.messageSource.getMessage("user.withdraw", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+        msg = this.messageSource.getMessage("user.withdraw", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale());
+        return msg;
+    }
+
+    @Override
+    public String getCurrentBalance() {
+        String msg;
+
+        if (currentUserDto == null) {
+            msg = this.messageSource.getMessage("please.login", new Object[]{}, LocaleContextHolder.getLocale());
+            return msg;
+        }
+
+        msg = this.messageSource.getMessage("current.balance", new Object[]{currentUserDto.getUsername(),currentUserDto.getCurrentBalance()}, LocaleContextHolder.getLocale());
+        return msg;
     }
 
     private CurrentUserDto currentUser(String username, Double balance, Integer userId) {
@@ -236,11 +285,11 @@ public class AtmServiceImpl implements AtmService {
         return this.messageSource.getMessage("user.credit.limit", new Object[]{bankAdditionalDetails.getCreditLimit()}, LocaleContextHolder.getLocale());
     }*/
 
-    private BankDetails getBankDetails() {
-        return bankRepository.findByUserId(currentUserDto.getUserId());
+    private BankDetails getUserBankDetails(Integer userId) {
+        return bankRepository.findByUserId(userId);
     }
 
-    private void createHistory(User newUser,String msg, TransactionType type) {
+    private void createHistory(User newUser, String msg, TransactionType type) {
         TransactionHistory transactionHistory = new TransactionHistory();
         transactionHistory.setTransactionType(type);
         transactionHistory.setUser(newUser);
