@@ -17,8 +17,8 @@ public class BankDetails {
 
     private Double balance = 0.0;
 
-    private Boolean isCreditLimitGenerated = Boolean.FALSE;
-    private Boolean isWithdrawalLimitGenerated = Boolean.FALSE;
+   /* private Boolean isCreditLimitGenerated = Boolean.FALSE;
+    private Boolean isWithdrawalLimitGenerated = Boolean.FALSE;*/
 
     private Boolean isPinGenerated = Boolean.FALSE;
 

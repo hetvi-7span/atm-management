@@ -43,14 +43,14 @@ public class AtmController {
         return atmService.withdraw(amount);
     }
 
-    @ShellMethod
+ /*   @ShellMethod
     public String limit(String type,Double amount){
         if(type != null && type.equalsIgnoreCase("Withdraw")){
             return atmService.setWithdrawLimit(amount);
         }else{
             return atmService.setCreditLimit(amount);
         }
-    }
+    }*/
 
 
     @ShellMethod("transfer")

@@ -1,17 +1,9 @@
 package com.solution.atmmanagement.service.impl;
 
 import com.solution.atmmanagement.dto.CurrentUserDto;
-import com.solution.atmmanagement.model.BankAdditionalDetails;
-import com.solution.atmmanagement.model.BankDetails;
-import com.solution.atmmanagement.model.User;
-import com.solution.atmmanagement.model.UserOwingDetails;
 import com.solution.atmmanagement.exception.AtmTransactionException;
 import com.solution.atmmanagement.model.*;
-import com.solution.atmmanagement.repository.BankAdditionalRepository;
-import com.solution.atmmanagement.repository.BankRepository;
-import com.solution.atmmanagement.repository.UserOwingRepository;
-import com.solution.atmmanagement.repository.TransactionHistoryRepository;
-import com.solution.atmmanagement.repository.UserRepository;
+import com.solution.atmmanagement.repository.*;
 import com.solution.atmmanagement.service.AtmService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -21,9 +13,9 @@ import org.springframework.stereotype.Service;
 import javax.transaction.Transactional;
 import javax.validation.ConstraintViolationException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.Objects;
 
 @Service
 public class AtmServiceImpl implements AtmService {
@@ -70,11 +62,10 @@ public class AtmServiceImpl implements AtmService {
 
                     BankDetails bankDetails = new BankDetails();
                     bankDetails.setUser(newUser);
+                    bankDetails.setBankAdditionalDetails(new BankAdditionalDetails());
                     bankRepository.save(bankDetails);
 
-                    BankAdditionalDetails bankAdditionalDetails = new BankAdditionalDetails();
-                    bankAdditionalDetails.setUser(newUser);
-                    bankAdditionalRepository.save(bankAdditionalDetails);
+                    createHistory(newUser,this.messageSource.getMessage("user.created.history", new Object[]{}, LocaleContextHolder.getLocale()),TransactionType.CREATE);
 
                     msg = this.messageSource.getMessage("user.created", new Object[]{newUser.getUsername(), bankDetails.getBalance()}, LocaleContextHolder.getLocale());
                     currentUserDto = currentUser(newUser.getUsername(), 0.0, newUser.getId());
@@ -192,9 +183,9 @@ public class AtmServiceImpl implements AtmService {
     public String withdraw(Double amount){
         BankDetails bankDetails = getBankDetails();
         BankAdditionalDetails bankAdditionalDetails = Objects.nonNull(bankDetails)?bankDetails.getBankAdditionalDetails():null;
-        if(bankAdditionalDetails.getWithdrawalLimit() < amount){
+       /* if(bankAdditionalDetails.getWithdrawalLimit() < amount){
               throw new AtmTransactionException( this.messageSource.getMessage("user.withdraw.limit.exceeded", new Object[]{},LocaleContextHolder.getLocale()));
-        }
+        }*/
         if(Objects.nonNull(bankDetails) && bankDetails.getBalance() > amount){
             bankDetails.setBalance(bankDetails.getBalance() - amount);
             bankRepository.save(bankDetails);
@@ -206,7 +197,8 @@ public class AtmServiceImpl implements AtmService {
 
     private CurrentUserDto currentUser(String username, Double balance, Integer userId) {
         return CurrentUserDto.builder().username(username).currentBalance(balance).userId(userId).build();
-    @Override
+    }
+/*    @Override
     public String setWithdrawLimit(Double amount) {
         BankDetails bankDetails = getBankDetails();
         BankAdditionalDetails bankAdditionalDetails = bankDetails.getBankAdditionalDetails();
@@ -223,12 +215,9 @@ public class AtmServiceImpl implements AtmService {
             createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.withdraw.limit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.WITHDRAW);
         }
         return this.messageSource.getMessage("user.withdraw.limit", new Object[]{bankAdditionalDetails.getWithdrawalLimit()}, LocaleContextHolder.getLocale());
-    }
+    }*/
 
-
-
-
-    @Override
+    /*@Override
     public String setCreditLimit(Double amount) {
         BankDetails bankDetails = getBankDetails();
         BankAdditionalDetails bankAdditionalDetails = bankDetails.getBankAdditionalDetails();
@@ -245,10 +234,10 @@ public class AtmServiceImpl implements AtmService {
             createHistory(bankDetails.getUser(), this.messageSource.getMessage("user.credit.limit", new Object[]{bankDetails.getBalance()}, LocaleContextHolder.getLocale()), TransactionType.DEPOSIT);
         }
         return this.messageSource.getMessage("user.credit.limit", new Object[]{bankAdditionalDetails.getCreditLimit()}, LocaleContextHolder.getLocale());
-    }
+    }*/
 
     private BankDetails getBankDetails() {
-        return bankRepository.findByUserId(1);
+        return bankRepository.findByUserId(currentUserDto.getUserId());
     }
 
     private void createHistory(User newUser,String msg, TransactionType type) {

@@ -11,10 +11,10 @@ public class BankAdditionalDetails extends BaseModel{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private Double creditLimit = 0.0;
+    /*private Double creditLimit = 0.0;
 
     private Double withdrawalLimit = 0.0;
-
+*/
     private Integer pin;
 
 
