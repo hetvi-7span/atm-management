@@ -1,18 +1,18 @@
 package com.solution.atmmanagement.model;
 
+import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.sql.Date;
-import java.util.LinkedList;
-import java.util.List;
 
 @Entity
-@Table(name = "user_details")
+@Table(name = "user_details",uniqueConstraints = { @UniqueConstraint(columnNames = { "user_name" }) })
+@Data
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @Column(name = "user_name")
@@ -31,4 +31,9 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_date")
     private Date updatedDate;
+
+    /*@OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "bank_detail_id",referencedColumnName = "id")*/
+    @OneToOne(mappedBy = "user")
+    BankDetails bankDetails;
 }

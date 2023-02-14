@@ -2,6 +2,7 @@ package com.solution.atmmanagement.model;
 
 import javax.persistence.*;
 
+import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -10,9 +11,10 @@ import javax.persistence.GeneratedValue;
 import java.sql.Date;
 
 @Entity
+@Data
 public class TransactionHistory {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     private String description;

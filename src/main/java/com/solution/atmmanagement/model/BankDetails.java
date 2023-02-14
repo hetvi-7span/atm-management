@@ -1,5 +1,6 @@
 package com.solution.atmmanagement.model;
 
+import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -7,19 +8,20 @@ import javax.persistence.*;
 import java.sql.Date;
 
 @Entity
+@Data
 public class BankDetails {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    private Double balance;
+    private Double balance = 0.0;
 
-    private Boolean isCreditLimitGenerated;
-    private Boolean isWithdrawalLimitGenerated;
+    private Boolean isCreditLimitGenerated = Boolean.FALSE;
+    private Boolean isWithdrawalLimitGenerated = Boolean.FALSE;
 
-    private Boolean isPinGenerated;
+    private Boolean isPinGenerated = Boolean.FALSE;
 
-    @OneToOne(cascade = CascadeType.ALL,fetch = FetchType.EAGER)
+    @OneToOne(cascade = CascadeType.ALL)
     User user;
 
     @CreationTimestamp
